@@ -144,7 +144,7 @@ const Home = () => (
               <span className="text-orange-500">Defect</span> <br />
               Culture.
             </h1>
-            <p className="mt-8 max-w-md font-body text-base leading-relaxed text-slate-400">
+            <p className="mt-8 max-w-md font-sans text-base leading-relaxed text-slate-400">
               High-fidelity welding and precision engineering for the world’s most demanding industries. Based in Wimborne, Dorset.
             </p>
             <div className="mt-10 flex flex-wrap gap-4">
@@ -305,7 +305,7 @@ const Sectors = () => (
             { 
               name: "Aerospace", 
               icon: Plane, 
-              img: "https://images.unsplash.com/photo-1559297434-2d8a134e042e?auto=format&fit=crop&q=80&w=1200",
+              img: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=80&w=1200",
               desc: "Critical engine parts, structural frames, and landing gear components."
             },
             { 
