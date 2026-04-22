@@ -3,339 +3,615 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { 
-  BrowserRouter as Router, 
-  Routes, 
-  Route, 
-  Link, 
-  useLocation 
+import React, { useEffect, useMemo, useState } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Link,
+  useLocation,
 } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
-import { 
-  ShieldCheck, 
-  Settings, 
-  Plane, 
-  Anchor, 
-  Cpu, 
-  Phone, 
-  Mail, 
-  MapPin, 
-  ChevronRight,
-  Clock,
-  Award,
+import {
+  ShieldCheck,
+  Settings,
+  Plane,
+  Anchor,
+  Phone,
+  Mail,
+  MapPin,
   CheckCircle2,
   ArrowRight,
   Zap,
   Hammer,
   HardHat,
-  Factory
+  Factory,
+  Loader2,
+  AlertTriangle,
+  Inbox,
+  Layers,
+  Gauge,
+  Sparkles,
+  Menu,
+  X,
 } from "lucide-react";
 
-// --- Components ---
+type ButtonVariant = "primary" | "secondary" | "accent";
+
+type SubmitState = "idle" | "loading" | "success" | "error";
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.main
-    initial={{ opacity: 0, x: 20 }}
-    animate={{ opacity: 1, x: 0 }}
-    exit={{ opacity: 0, x: -20 }}
-    transition={{ duration: 0.4, ease: "easeOut" }}
+    initial={{ opacity: 0, y: 16 }}
+    animate={{ opacity: 1, y: 0 }}
+    exit={{ opacity: 0, y: -12 }}
+    transition={{ duration: 0.24, ease: "easeOut" }}
     className="min-h-[calc(100vh-80px)]"
   >
     {children}
   </motion.main>
 );
 
-const BrutalButton = ({ 
-  children, 
-  className = "", 
+const UIButton = ({
+  children,
+  className = "",
   variant = "primary",
-  onClick 
-}: { 
-  children: React.ReactNode; 
-  className?: string; 
-  variant?: "primary" | "secondary" | "accent";
+  onClick,
+  disabled = false,
+  loading = false,
+  type = "button",
+  trailingIcon,
+}: {
+  children: React.ReactNode;
+  className?: string;
+  variant?: ButtonVariant;
   onClick?: () => void;
+  disabled?: boolean;
+  loading?: boolean;
+  type?: "button" | "submit";
+  trailingIcon?: React.ReactNode;
 }) => {
-  const variants = {
-    primary: "bg-slate-900 text-white hover:bg-slate-800",
-    secondary: "bg-white text-slate-900 hover:bg-slate-50",
-    accent: "bg-orange-600 text-white hover:bg-orange-700"
+  const variantClass: Record<ButtonVariant, string> = {
+    primary: "ui-btn-primary",
+    secondary: "ui-btn-secondary",
+    accent: "ui-btn-accent",
   };
 
   return (
-    <button 
+    <button
+      type={type}
       onClick={onClick}
-      className={`brutal-border px-8 py-4 font-mono text-sm font-bold uppercase tracking-widest active:scale-95 ${variants[variant]} ${className}`}
+      disabled={disabled || loading}
+      className={`ui-btn ${variantClass[variant]} ${className}`}
     >
-      {children}
+      {loading && <Loader2 className="h-4 w-4 animate-spin" />}
+      <span>{children}</span>
+      {!loading && trailingIcon}
     </button>
   );
 };
 
 const Navigation = () => {
   const location = useLocation();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const links = [
-    { name: "Home", path: "/" },
-    { name: "Capabilities", path: "/capabilities" },
-    { name: "Sectors", path: "/sectors" },
-    { name: "About", path: "/about" },
-    { name: "Contact", path: "/contact" },
+    { name: "Home", path: "/", icon: Factory },
+    { name: "Capabilities", path: "/capabilities", icon: Layers },
+    { name: "Sectors", path: "/sectors", icon: Plane },
+    { name: "About", path: "/about", icon: ShieldCheck },
+    { name: "Contact", path: "/contact", icon: Mail },
   ];
 
-  return (
-    <nav className="sticky top-0 z-50 w-full border-b-2 border-slate-900 bg-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link to="/" className="flex items-center gap-2 group">
-          <div className="flex h-10 w-10 items-center justify-center bg-slate-900 text-white transition-transform group-hover:rotate-90">
-            <Settings className="h-6 w-6" />
-          </div>
-          <span className="text-xl font-bold tracking-tight text-slate-900 uppercase">SRS MANUFACTURING LTD</span>
-        </Link>
-        
-        <div className="hidden md:flex items-center gap-6 font-mono text-xs font-bold uppercase tracking-widest">
-          {links.map((link) => (
-            <Link 
-              key={link.path} 
-              to={link.path} 
-              className={`relative transition-colors hover:text-orange-600 ${location.pathname === link.path ? 'text-orange-600' : 'text-slate-600'}`}
-            >
-              {link.name}
-              {location.pathname === link.path && (
-                <motion.div layoutId="nav-underline" className="absolute -bottom-1 left-0 h-1 w-full bg-orange-600" />
-              )}
-            </Link>
-          ))}
-        </div>
+  useEffect(() => {
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
 
-        <div className="flex items-center gap-4">
-          <a href="tel:01202884583" className="hidden sm:flex items-center gap-2 font-mono text-xs font-bold text-slate-900">
-            <Phone className="h-4 w-4" />
-            01202 884583
-          </a>
-          <BrutalButton variant="accent" className="hidden sm:block !px-4 !py-2 !text-[10px]">
-            Get Quote
-          </BrutalButton>
+  return (
+    <nav className="sticky top-0 z-50 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/88">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4 py-3 lg:gap-8">
+          <Link to="/" className="group flex min-w-0 flex-1 items-center gap-3 focus-visible:outline-none">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+              <Settings className="h-5 w-5 transition-transform duration-300 group-hover:rotate-180" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-base font-bold uppercase tracking-tight text-slate-900 sm:text-lg">SRS Manufacturing Ltd</p>
+              <p className="truncate text-[11px] text-slate-500 sm:text-xs">Precision Engineering, Wimborne</p>
+            </div>
+          </Link>
+
+          <div className="hidden items-center gap-2 lg:flex">
+            {links.map((link) => {
+              const isActive = location.pathname === link.path;
+              const Icon = link.icon;
+
+              return (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  aria-current={isActive ? "page" : undefined}
+                  className={`inline-flex items-center gap-2 rounded-sm px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.12em] transition-colors duration-150 ${
+                    isActive
+                      ? "border-2 border-orange-200 bg-orange-50 text-orange-700"
+                      : "border-2 border-slate-900/70 text-slate-600 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900"
+                  }`}
+                >
+                  <Icon className="h-4 w-4" />
+                  <span>{link.name}</span>
+                </Link>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <a
+              href="tel:01202884583"
+              className="hidden items-center gap-2 whitespace-nowrap rounded-sm border-2 border-slate-900/70 px-4 py-2 font-mono text-xs font-semibold text-slate-700 transition-colors duration-150 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900 sm:inline-flex"
+            >
+              <Phone className="h-4 w-4" />
+              01202 884583
+            </a>
+            <UIButton variant="accent" className="hidden sm:inline-flex">Get Quote</UIButton>
+            <button
+              type="button"
+              aria-label={mobileMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((current) => !current)}
+              className="inline-flex h-10 w-10 items-center justify-center rounded-sm border-2 border-slate-900/70 bg-white text-slate-900 transition-colors duration-150 hover:bg-slate-50 lg:hidden"
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
         </div>
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.16, ease: "easeOut" }}
+              className="mb-4 space-y-2 border-2 border-slate-900/80 bg-white p-3 shadow-[4px_4px_0_rgba(15,23,42,0.18)] lg:hidden"
+            >
+              {links.map((link) => {
+                const isActive = location.pathname === link.path;
+                const Icon = link.icon;
+
+                return (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex items-center justify-between px-3 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] transition-colors duration-150 ${
+                      isActive
+                        ? "border-2 border-orange-200 bg-orange-50 text-orange-700"
+                        : "border-2 border-slate-900/75 bg-white text-slate-700 hover:bg-slate-50"
+                    }`}
+                  >
+                    <span>{link.name}</span>
+                    <Icon className="h-4 w-4" />
+                  </Link>
+                );
+              })}
+
+              <a
+                href="tel:01202884583"
+                className="flex items-center justify-between border-2 border-slate-900/75 px-3 py-3 font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-slate-700"
+              >
+                <span>Call 01202 884583</span>
+                <Phone className="h-4 w-4" />
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </nav>
   );
 };
 
-// --- Pages ---
-
 const Home = () => (
   <PageWrapper>
-    {/* Hero */}
-    <section className="relative overflow-hidden bg-slate-900 py-24 sm:py-32 dark-blueprint blueprint-bg">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:items-center">
-          <motion.div 
-            initial={{ opacity: 0, x: -50 }}
+    <section className="relative overflow-hidden bg-slate-900 py-20 sm:py-24 dark-blueprint blueprint-bg">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 items-center gap-10 lg:grid-cols-2 lg:gap-14">
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.32 }}
           >
-            <div className="mb-6 inline-flex items-center gap-2 bg-orange-600 px-3 py-1 font-mono text-[10px] font-bold uppercase tracking-[0.2em] text-white">
-              <Zap className="h-3 w-3" />
-              Precision_Engineering_v2.0
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full bg-orange-500/15 px-4 py-2 font-mono text-[11px] font-bold uppercase tracking-[0.18em] text-orange-200 ring-1 ring-orange-400/30">
+              <Zap className="h-4 w-4" />
+              Precision engineering partner
             </div>
-            <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl uppercase leading-[0.9]">
-              Zero <br />
-              <span className="text-orange-500">Defect</span> <br />
-              Culture.
+            <h1 className="hero-headline text-5xl font-bold uppercase leading-[0.96] tracking-tight text-white sm:text-7xl">
+              Zero <span className="hero-emphasis">Defect</span> <br />
+              <span className="hero-outline">Results.</span>
             </h1>
-            <p className="mt-8 max-w-md font-sans text-base leading-relaxed text-slate-400">
-              High-fidelity welding and precision engineering for the world’s most demanding industries. Based in Wimborne, Dorset.
+            <p className="mt-6 max-w-xl text-base leading-7 text-slate-300">
+              High-fidelity welding and precision engineering for the world&apos;s most demanding industries. Trusted by aerospace,
+              marine, and heavy industrial teams across the UK.
             </p>
-            <div className="mt-10 flex flex-wrap gap-4">
-              <BrutalButton variant="accent">Request Technical Quote</BrutalButton>
-              <BrutalButton variant="secondary">View Capabilities</BrutalButton>
+            <div className="mt-8 flex flex-wrap gap-4">
+              <UIButton variant="accent" trailingIcon={<ArrowRight className="h-4 w-4" />}>
+                Request Technical Quote
+              </UIButton>
+              <Link to="/capabilities">
+                <UIButton variant="secondary">View Capabilities</UIButton>
+              </Link>
             </div>
           </motion.div>
-          
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.8, rotate: 5 }}
-            animate={{ opacity: 1, scale: 1, rotate: 0 }}
-            transition={{ duration: 0.8 }}
-            className="relative hidden lg:block"
+
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.32, delay: 0.08 }}
+            className="hero-visual-stage relative hidden lg:block"
           >
-            <div className="brutal-border border-orange-600 bg-slate-800 p-2">
-              <img 
-                src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&q=80&w=1200" 
-                alt="Welding" 
-                className="w-full grayscale hover:grayscale-0 transition-all duration-500"
+            <div className="hero-visual-frame overflow-hidden rounded-sm border-2 border-slate-600 bg-slate-800/70 p-2 shadow-[6px_6px_0_rgba(15,23,42,0.45)]">
+              <img
+                src="https://images.unsplash.com/photo-1504328345606-18bbc8c9d7d1?auto=format&fit=crop&q=80&w=1200"
+                alt="Welding"
+                className="hero-visual-image w-full rounded-sm grayscale transition-all duration-300 hover:grayscale-0"
                 referrerPolicy="no-referrer"
               />
             </div>
-            <div className="absolute -bottom-8 -right-8 bg-orange-600 p-6 brutal-border border-slate-900 text-white">
-              <p className="font-mono text-2xl font-bold">AS9100</p>
-              <p className="font-mono text-[10px] font-bold uppercase tracking-widest">Certified Facility</p>
+            <div className="absolute -bottom-6 -right-6 rounded-sm border-2 border-orange-300 bg-orange-600 px-6 py-4 text-white shadow-[4px_4px_0_rgba(124,45,18,0.35)]">
+              <p className="font-mono text-xl font-bold">AS9100</p>
+              <p className="font-mono text-[11px] uppercase tracking-[0.12em] text-orange-100">Certified Facility</p>
             </div>
           </motion.div>
         </div>
       </div>
     </section>
 
-    {/* Marquee */}
-    <div className="border-y-2 border-slate-900 bg-white py-4 overflow-hidden">
-      <div className="marquee-track">
-        {[...Array(10)].map((_, i) => (
-          <div key={i} className="flex items-center gap-8 px-8 font-mono text-sm font-bold uppercase tracking-widest text-slate-900 whitespace-nowrap">
-            <span>Aerospace Certified</span>
-            <Zap className="h-4 w-4 text-orange-600" />
-            <span>Marine Engineering</span>
-            <Zap className="h-4 w-4 text-orange-600" />
-            <span>Precision Welding</span>
-            <Zap className="h-4 w-4 text-orange-600" />
-          </div>
-        ))}
-      </div>
-    </div>
-
-    {/* Sectors Preview */}
-    <section className="py-24 bg-white">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="flex flex-col md:flex-row justify-between items-end gap-8 mb-16">
-          <div className="max-w-xl">
-            <h2 className="font-mono text-xs font-bold uppercase tracking-[0.3em] text-slate-400 mb-4">01_Sectors</h2>
-            <p className="text-4xl font-bold tracking-tight text-slate-900 uppercase">Built for the <span className="text-orange-600">Extremes</span>.</p>
-          </div>
-          <Link to="/sectors">
-            <BrutalButton variant="primary" className="!px-6 !py-3 !text-xs">View All Sectors</BrutalButton>
-          </Link>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {[
-            { title: "Aerospace", icon: Plane, color: "bg-slate-50" },
-            { title: "Marine", icon: Anchor, color: "bg-slate-50" },
-            { title: "B2B MFG", icon: Factory, color: "bg-slate-50" },
-          ].map((sector, i) => (
-            <motion.div 
+    <section className="border-y border-slate-200 bg-white py-4">
+      <div className="ticker-shell">
+        <div className="marquee-track">
+          {[...Array(10)].map((_, i) => (
+            <div
               key={i}
-              whileHover={{ y: -10 }}
-              className={`brutal-border border-slate-900 p-8 ${sector.color}`}
+              className="flex items-center gap-8 whitespace-nowrap px-8 font-mono text-sm font-semibold uppercase tracking-[0.12em] text-slate-700"
             >
-              <sector.icon className="h-12 w-12 mb-6 text-orange-600" />
-              <h3 className="text-2xl font-bold uppercase mb-4">{sector.title}</h3>
-              <p className="font-body text-sm text-slate-600 mb-6">High-precision components for mission-critical systems.</p>
-              <ArrowRight className="h-6 w-6 text-slate-900" />
-            </motion.div>
+              <span>Aerospace Certified</span>
+              <Zap className="h-4 w-4 text-orange-500" />
+              <span>Marine Engineering</span>
+              <Zap className="h-4 w-4 text-orange-500" />
+              <span>Precision Welding</span>
+              <Zap className="h-4 w-4 text-orange-500" />
+            </div>
           ))}
         </div>
       </div>
     </section>
-  </PageWrapper>
-);
 
-const Capabilities = () => (
-  <PageWrapper>
-    <section className="py-24 bg-slate-50 blueprint-bg">
-      <div className="mx-auto max-w-7xl px-4">
-        <h1 className="text-6xl font-bold tracking-tight text-slate-900 uppercase mb-16">
-          Technical <span className="text-orange-600">Firepower</span>.
-        </h1>
-        
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            {[
-              { title: "Skilled Welding", desc: "TIG, MIG, and MMA welding for Titanium, Stainless, and Aluminum.", icon: Hammer },
-              { title: "CNC Machining", desc: "Multi-axis precision machining with micron-level tolerances.", icon: Settings },
-              { title: "Inspection", desc: "Full NDT and digital inspection workflows for aerospace compliance.", icon: ShieldCheck },
-            ].map((cap, i) => (
-              <motion.div 
-                key={i}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1 }}
-                className="brutal-border border-slate-900 bg-white p-8 flex gap-6 items-start"
-              >
-                <div className="bg-orange-600 p-4 brutal-border border-slate-900 text-white">
-                  <cap.icon className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-bold uppercase mb-2">{cap.title}</h3>
-                  <p className="font-body text-sm text-slate-600 leading-relaxed">{cap.desc}</p>
-                </div>
-              </motion.div>
-            ))}
+    <section className="section-tint py-20">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+        <div className="mb-12 flex flex-col gap-8 md:flex-row md:items-end md:justify-between">
+          <div className="max-w-2xl space-y-4">
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-slate-500">01_Sectors</p>
+            <h2 className="text-4xl font-bold uppercase tracking-tight text-slate-900 sm:text-5xl">
+              Built for the <span className="text-orange-600">extremes</span>
+            </h2>
+            <p className="max-w-xl text-base text-slate-600">Each sector has unique compliance and quality pressures. We tailor process, QA, and delivery to match.</p>
           </div>
-          
-          <div className="brutal-border border-slate-900 bg-slate-900 p-12 text-white flex flex-col justify-center">
-            <h2 className="text-3xl font-bold uppercase mb-6">The Spec Sheet</h2>
-            <ul className="space-y-4 font-mono text-sm">
-              <li className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-500">Max Weld Thickness</span>
-                <span className="text-orange-500">50mm</span>
-              </li>
-              <li className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-500">CNC Tolerance</span>
-                <span className="text-orange-500">±0.005mm</span>
-              </li>
-              <li className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-500">Materials</span>
-                <span className="text-orange-500">Titanium, Inconel, Al</span>
-              </li>
-              <li className="flex justify-between border-b border-slate-800 pb-2">
-                <span className="text-slate-500">Certifications</span>
-                <span className="text-orange-500">AS9100, ISO9001</span>
-              </li>
-            </ul>
-            <BrutalButton variant="accent" className="mt-12">Download Full Specs</BrutalButton>
-          </div>
+          <Link to="/sectors">
+            <UIButton trailingIcon={<ArrowRight className="h-4 w-4" />}>View All Sectors</UIButton>
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            { title: "Aerospace", icon: Plane, tint: "bg-blue-50 text-blue-700", copy: "Mission-critical components with tight tolerances and full traceability." },
+            { title: "Marine", icon: Anchor, tint: "bg-emerald-50 text-emerald-700", copy: "High-strength assemblies for corrosive and high-pressure environments." },
+            { title: "Industrial", icon: Factory, tint: "bg-violet-50 text-violet-700", copy: "Reliable fabrication support for bespoke manufacturing systems." },
+          ].map((sector) => (
+            <article key={sector.title} className="surface-card p-8">
+              <div className={`mb-6 inline-flex h-12 w-12 items-center justify-center rounded-xl ${sector.tint}`}>
+                <sector.icon className="h-6 w-6" />
+              </div>
+              <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">{sector.title}</h3>
+              <p className="mt-4 text-sm leading-6 text-slate-600">{sector.copy}</p>
+              <div className="mt-6 inline-flex items-center gap-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-orange-600">
+                Explore
+                <ArrowRight className="h-4 w-4" />
+              </div>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section className="bg-white py-20">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+        <div className="mb-12 max-w-3xl space-y-4">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-slate-500">02_Why SRS</p>
+          <h2 className="text-4xl font-bold uppercase tracking-tight text-slate-900 sm:text-5xl">
+            Manufacturing certainty for <span className="text-orange-600">high-risk</span> environments
+          </h2>
+          <p className="text-base leading-7 text-slate-600">
+            When tolerance, timeline, and traceability all matter, your supplier has to be as disciplined as your internal engineering
+            standards.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
+          {[
+            {
+              title: "Documented Workflows",
+              icon: ShieldCheck,
+              tint: "bg-emerald-50 text-emerald-700",
+              copy: "Controlled welding and machining pathways with revision-aware documentation.",
+            },
+            {
+              title: "Tight Tolerance Control",
+              icon: Gauge,
+              tint: "bg-blue-50 text-blue-700",
+              copy: "Process checks built around demanding specification windows and repeatability.",
+            },
+            {
+              title: "Engineer-Led Support",
+              icon: HardHat,
+              tint: "bg-violet-50 text-violet-700",
+              copy: "Direct communication with technical teams, not a generic account queue.",
+            },
+            {
+              title: "Responsive Delivery",
+              icon: Zap,
+              tint: "bg-orange-50 text-orange-700",
+              copy: "Rapid quotation and practical production scheduling for urgent requirements.",
+            },
+          ].map((item) => (
+            <article key={item.title} className="surface-card p-7">
+              <div className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-sm ${item.tint}`}>
+                <item.icon className="h-6 w-6" />
+              </div>
+              <h3 className="text-xl font-bold uppercase tracking-tight text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{item.copy}</p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <section className="section-tint py-20">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1.1fr_0.9fr]">
+          <article className="surface-card p-8 sm:p-10">
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-slate-500">03_Workflow</p>
+            <h2 className="mt-4 text-4xl font-bold uppercase tracking-tight text-slate-900 sm:text-5xl">How we run every project</h2>
+            <p className="mt-5 max-w-2xl text-base leading-7 text-slate-600">
+              Our process keeps quality visible from first brief through final delivery, so procurement, operations, and engineering all stay aligned.
+            </p>
+
+            <div className="mt-8 space-y-4">
+              {[
+                "Technical scope review with material and tolerance confirmation",
+                "Method planning with compliance checkpoints and QA sign-off",
+                "Build execution with in-process inspection and traceability",
+                "Dispatch with documented packs and responsive follow-up support",
+              ].map((step) => (
+                <div key={step} className="flex items-start gap-3 border-2 border-slate-300 bg-slate-50/70 p-4">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  <p className="text-sm leading-6 text-slate-700">{step}</p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="surface-card bg-slate-900 p-8 text-white sm:p-10">
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-slate-300">At A Glance</p>
+            <h3 className="mt-4 text-3xl font-bold uppercase tracking-tight">Performance snapshot</h3>
+
+            <div className="mt-8 grid grid-cols-2 gap-4">
+              {[
+                { label: "Years", value: "25+" },
+                { label: "Quote Speed", value: "48h" },
+                { label: "Compliance", value: "100%" },
+                { label: "Sectors", value: "Aero / Marine / Industrial" },
+              ].map((stat) => (
+                <div key={stat.label} className="border-2 border-slate-500/80 bg-slate-800/70 p-4">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-slate-300">{stat.label}</p>
+                  <p className="mt-2 text-sm font-bold text-white">{stat.value}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 space-y-3">
+              <Link to="/contact" className="block">
+                <UIButton variant="accent" className="w-full">Start a Project Discussion</UIButton>
+              </Link>
+              <Link to="/about" className="block">
+                <UIButton variant="secondary" className="w-full">Explore Our Facility</UIButton>
+              </Link>
+            </div>
+          </article>
         </div>
       </div>
     </section>
   </PageWrapper>
 );
 
+const capabilityData = [
+  {
+    id: "welding",
+    title: "Skilled Welding",
+    desc: "TIG, MIG, and MMA welding for titanium, stainless, and aluminium with repeatable quality checks.",
+    icon: Hammer,
+    tone: "bg-orange-50 text-orange-700",
+    metrics: ["Up to 50mm section welding", "Documented WPS/WPQR packs", "Certified operators"],
+  },
+  {
+    id: "machining",
+    title: "CNC Machining",
+    desc: "Multi-axis precision machining with micron-level tolerances and inspection-ready reporting.",
+    icon: Settings,
+    tone: "bg-blue-50 text-blue-700",
+    metrics: ["±0.005mm tolerance bands", "Prototype to production support", "Fast fixture turnaround"],
+  },
+  {
+    id: "inspection",
+    title: "Inspection",
+    desc: "Full NDT and digital inspection workflows aligned with aerospace and quality certification standards.",
+    icon: ShieldCheck,
+    tone: "bg-emerald-50 text-emerald-700",
+    metrics: ["NDT pathways available", "AS9100 and ISO aligned", "Full digital traceability"],
+  },
+];
+
+const Capabilities = () => {
+  const [selectedId, setSelectedId] = useState<string | null>(capabilityData[0].id);
+
+  const selectedCapability = useMemo(
+    () => capabilityData.find((capability) => capability.id === selectedId),
+    [selectedId],
+  );
+
+  return (
+    <PageWrapper>
+      <section className="section-tint py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="mb-16 space-y-4">
+            <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-slate-500">02_Capabilities</p>
+            <h1 className="text-5xl font-bold uppercase tracking-tight text-slate-900 sm:text-6xl">
+              Technical <span className="text-orange-600">Firepower</span>
+            </h1>
+            <p className="max-w-2xl text-base text-slate-600">Select a capability to explore process details and operating benchmarks.</p>
+          </div>
+
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)]">
+            <div className="space-y-4">
+              {capabilityData.map((capability) => {
+                const isActive = selectedId === capability.id;
+                const Icon = capability.icon;
+
+                return (
+                  <button
+                    key={capability.id}
+                    type="button"
+                    onClick={() => setSelectedId(capability.id)}
+                    className={`w-full border-2 p-6 text-left transition duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-400/70 ${
+                      isActive
+                        ? "border-orange-300 bg-orange-50/70 shadow-[4px_4px_0_rgba(124,45,18,0.18)]"
+                        : "border-slate-900/80 bg-white shadow-[4px_4px_0_rgba(15,23,42,0.12)] hover:border-slate-900 hover:bg-slate-50"
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`inline-flex h-11 w-11 items-center justify-center rounded-xl ${capability.tone}`}>
+                        <Icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="text-xl font-bold uppercase tracking-tight text-slate-900">{capability.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">{capability.desc}</p>
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+
+              <UIButton variant="secondary" className="w-full" onClick={() => setSelectedId(null)}>
+                Clear Selection
+              </UIButton>
+            </div>
+
+            <div className="surface-card p-8">
+              {selectedCapability ? (
+                <>
+                  <div className="mb-8 flex items-start justify-between gap-6">
+                    <div>
+                      <p className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Selected Capability</p>
+                      <h2 className="mt-2 text-3xl font-bold uppercase tracking-tight text-slate-900">{selectedCapability.title}</h2>
+                    </div>
+                    <Gauge className="h-8 w-8 text-orange-600" />
+                  </div>
+
+                  <div className="space-y-4">
+                    {selectedCapability.metrics.map((metric) => (
+                      <div key={metric} className="flex items-start gap-3 rounded-sm border-2 border-slate-300 bg-slate-50/70 p-4">
+                        <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                        <p className="text-sm text-slate-700">{metric}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mt-8 flex flex-wrap gap-4">
+                    <UIButton variant="accent">Request Process Review</UIButton>
+                    <UIButton variant="secondary">Download Full Specs</UIButton>
+                  </div>
+                </>
+              ) : (
+                <div className="status-panel">
+                  <div className="flex items-start gap-4">
+                    <Inbox className="mt-0.5 h-6 w-6 text-slate-500" />
+                    <div>
+                      <p className="text-lg font-semibold text-slate-900">No capability selected</p>
+                      <p className="mt-2 text-sm text-slate-600">Choose a capability from the list to view process metrics and next actions.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+    </PageWrapper>
+  );
+};
+
 const Sectors = () => (
   <PageWrapper>
-    <section className="py-24 bg-white">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="max-w-3xl mb-16">
-          <h1 className="text-6xl font-bold tracking-tight text-slate-900 uppercase mb-6">
-            Where We <span className="text-orange-600">Operate</span>.
+    <section className="bg-white py-24">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6">
+        <div className="mb-16 max-w-3xl space-y-6">
+          <h1 className="text-5xl font-bold uppercase tracking-tight text-slate-900 sm:text-6xl">
+            Where We <span className="text-orange-600">Operate</span>
           </h1>
-          <p className="font-body text-base text-slate-600">From the stratosphere to the deep ocean, our components are built to survive the harshest conditions known to man.</p>
+          <p className="text-base leading-7 text-slate-600">
+            From the stratosphere to the deep ocean, our components are built to survive the harshest operating conditions.
+          </p>
         </div>
 
-        <div className="space-y-12">
+        <div className="space-y-10">
           {[
-            { 
-              name: "Aerospace", 
-              icon: Plane, 
+            {
+              name: "Aerospace",
+              icon: Plane,
               img: "https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&q=80&w=1200",
-              desc: "Critical engine parts, structural frames, and landing gear components."
+              desc: "Critical engine parts, structural frames, and landing gear components.",
             },
-            { 
-              name: "Marine", 
-              icon: Anchor, 
+            {
+              name: "Marine",
+              icon: Anchor,
               img: "https://images.unsplash.com/photo-1567899378494-47b22a2ae96a?auto=format&fit=crop&q=80&w=1200",
-              desc: "Propulsion systems, hull reinforcements, and deep-sea exploration tools."
+              desc: "Propulsion systems, hull reinforcements, and deep-sea exploration tools.",
             },
-            { 
-              name: "Industrial", 
-              icon: Factory, 
+            {
+              name: "Industrial",
+              icon: Factory,
               img: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200",
-              desc: "Heavy-duty robotics, high-pressure valves, and custom manufacturing rigs."
+              desc: "Heavy-duty robotics, high-pressure valves, and custom manufacturing rigs.",
             },
-          ].map((sector, i) => (
-            <motion.div 
-              key={i}
-              initial={{ opacity: 0, y: 50 }}
+          ].map((sector) => (
+            <motion.article
+              key={sector.name}
+              initial={{ opacity: 0, y: 36 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="group relative h-[400px] overflow-hidden brutal-border border-slate-900"
+              className="group relative overflow-hidden rounded-sm border-2 border-slate-900/80 shadow-[5px_5px_0_rgba(15,23,42,0.18)]"
             >
-              <img src={sector.img} alt={sector.name} className="absolute inset-0 h-full w-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 group-hover:scale-105" referrerPolicy="no-referrer" />
-              <div className="absolute inset-0 bg-slate-900/60 group-hover:bg-slate-900/40 transition-all" />
-              <div className="absolute bottom-0 left-0 p-12 text-white">
-                <sector.icon className="h-12 w-12 mb-6 text-orange-500" />
-                <h2 className="text-4xl font-bold uppercase mb-4">{sector.name}</h2>
-                <p className="font-body text-base max-w-md text-slate-300">{sector.desc}</p>
+              <img
+                src={sector.img}
+                alt={sector.name}
+                className="h-[340px] w-full object-cover grayscale transition duration-300 group-hover:scale-[1.03] group-hover:grayscale-0"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-900/35 to-transparent" />
+              <div className="absolute bottom-0 left-0 right-0 p-8 sm:p-10">
+                <div className="mb-4 inline-flex h-11 w-11 items-center justify-center rounded-xl bg-orange-500/20 text-orange-300 ring-1 ring-orange-300/30">
+                  <sector.icon className="h-6 w-6" />
+                </div>
+                <h2 className="text-3xl font-bold uppercase tracking-tight text-white">{sector.name}</h2>
+                <p className="mt-4 max-w-xl text-sm leading-6 text-slate-200">{sector.desc}</p>
               </div>
-            </motion.div>
+            </motion.article>
           ))}
         </div>
       </div>
@@ -345,124 +621,319 @@ const Sectors = () => (
 
 const About = () => (
   <PageWrapper>
-    <section className="py-24 bg-slate-900 text-white dark-blueprint blueprint-bg">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-          <div>
-            <h1 className="text-6xl font-bold tracking-tight uppercase mb-8">
-              The <span className="text-orange-500">Engine</span> Room.
-            </h1>
-            <p className="font-body text-base text-slate-400 leading-relaxed mb-8">
-              Founded in Wimborne, SRS Manufacturing Ltd was built on a simple premise: precision is non-negotiable. We aren't just a machine shop; we are a technical partner for engineers who need zero-defect results.
+    <section className="bg-slate-900 py-20 text-white dark-blueprint blueprint-bg sm:py-24">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 items-center gap-10 px-4 sm:px-6 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <h1 className="text-5xl font-bold uppercase tracking-tight sm:text-6xl">
+            The <span className="text-orange-500">Engine</span> Room
+          </h1>
+          <p className="mt-8 text-base leading-7 text-slate-300">
+            Founded in Wimborne, SRS Manufacturing Ltd was built on a simple premise: precision is non-negotiable. We are a
+            technical partner for engineers who need zero-defect results.
+          </p>
+
+          <div className="mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="rounded-sm border-2 border-orange-400/60 bg-slate-800/80 p-6 shadow-[4px_4px_0_rgba(15,23,42,0.32)]">
+              <p className="text-4xl font-bold text-orange-400">25+</p>
+              <p className="mt-2 font-mono text-xs uppercase tracking-[0.1em] text-slate-300">Years Experience</p>
+            </div>
+            <div className="rounded-sm border-2 border-orange-400/60 bg-slate-800/80 p-6 shadow-[4px_4px_0_rgba(15,23,42,0.32)]">
+              <p className="text-4xl font-bold text-orange-400">100%</p>
+              <p className="mt-2 font-mono text-xs uppercase tracking-[0.1em] text-slate-300">Compliance Rate</p>
+            </div>
+            <div className="rounded-sm border-2 border-orange-400/60 bg-slate-800/80 p-6 shadow-[4px_4px_0_rgba(15,23,42,0.32)] sm:col-span-2">
+              <p className="text-4xl font-bold text-orange-400">48h</p>
+              <p className="mt-2 font-mono text-xs uppercase tracking-[0.1em] text-slate-300">Typical Quote Turnaround</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="relative">
+          <div className="overflow-hidden rounded-sm border-2 border-slate-700 p-2 shadow-[6px_6px_0_rgba(2,6,23,0.4)]">
+            <img
+              src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200"
+              alt="Workshop"
+              className="w-full rounded-sm"
+              referrerPolicy="no-referrer"
+            />
+          </div>
+          <div className="absolute -right-4 -top-4 hidden max-w-xs rounded-sm border-2 border-slate-900/80 bg-white p-6 text-slate-900 shadow-[4px_4px_0_rgba(15,23,42,0.2)] md:block">
+            <HardHat className="mb-4 h-7 w-7 text-orange-600" />
+            <p className="text-sm font-semibold leading-6">"We don&apos;t just weld metal; we forge reliability into every assembly."</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section className="section-tint py-20 sm:py-24">
+      <div className="mx-auto max-w-[1400px] px-4 sm:px-6">
+        <div className="mb-12 max-w-3xl space-y-4">
+          <p className="font-mono text-xs font-bold uppercase tracking-[0.22em] text-slate-500">03_Our Approach</p>
+          <h2 className="text-4xl font-bold uppercase tracking-tight text-slate-900 sm:text-5xl">
+            Built around <span className="text-orange-600">clarity</span> and control
+          </h2>
+          <p className="text-base leading-7 text-slate-600">
+            We run a disciplined, transparent process from first brief to final dispatch. That means fewer surprises, cleaner handovers,
+            and consistent quality even on complex builds.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {[
+            {
+              title: "1. Scope & Review",
+              copy: "We start by clarifying material, tolerance, compliance, and lead-time requirements with your engineering team.",
+              icon: Settings,
+              tint: "bg-blue-50 text-blue-700",
+            },
+            {
+              title: "2. Build & Verify",
+              copy: "Welding and machining pathways are documented and monitored with in-process QA and traceable inspection points.",
+              icon: Gauge,
+              tint: "bg-emerald-50 text-emerald-700",
+            },
+            {
+              title: "3. Deliver & Support",
+              copy: "You receive production-ready parts with full packs, certificates, and responsive technical follow-up.",
+              icon: CheckCircle2,
+              tint: "bg-violet-50 text-violet-700",
+            },
+          ].map((item) => (
+            <article key={item.title} className="surface-card p-8">
+              <div className={`mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl ${item.tint}`}>
+                <item.icon className="h-6 w-6" />
+              </div>
+              <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">{item.title}</h3>
+              <p className="mt-3 text-sm leading-6 text-slate-600">{item.copy}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-10 grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <article className="surface-card p-8">
+            <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Quality & Certifications</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              Documentation and controls are embedded in each project lifecycle to satisfy sector-specific audit and compliance demands.
             </p>
-            <div className="grid grid-cols-2 gap-8">
-              <div className="p-6 brutal-border border-orange-500 bg-slate-800">
-                <p className="text-3xl font-bold text-orange-500 mb-2">25+</p>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Years Experience</p>
-              </div>
-              <div className="p-6 brutal-border border-orange-500 bg-slate-800">
-                <p className="text-3xl font-bold text-orange-500 mb-2">100%</p>
-                <p className="font-mono text-[10px] uppercase tracking-widest text-slate-400">Compliance Rate</p>
-              </div>
+            <div className="mt-6 space-y-3">
+              {[
+                "AS9100 and ISO-aligned workflows",
+                "Material and weld traceability packs",
+                "NDT-ready verification pathways",
+                "Inspection reporting with revision control",
+              ].map((point) => (
+                <div key={point} className="flex items-start gap-3 rounded-sm border-2 border-slate-300 bg-slate-50/70 p-4">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600" />
+                  <p className="text-sm text-slate-700">{point}</p>
+                </div>
+              ))}
             </div>
-          </div>
-          <div className="relative">
-            <div className="brutal-border border-white p-2">
-              <img 
-                src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1200" 
-                alt="Workshop" 
-                className="w-full"
-                referrerPolicy="no-referrer"
-              />
+          </article>
+
+          <article className="surface-card p-8">
+            <h3 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Facility Snapshot</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-600">
+              The Wimborne site supports prototyping through repeat production with dedicated welding, machining, and inspection zones.
+            </p>
+            <div className="mt-6 grid grid-cols-2 gap-4">
+              {[
+                { label: "Lead Time", value: "Fast-track slots" },
+                { label: "Material Range", value: "Titanium to stainless" },
+                { label: "Batch Size", value: "Prototype to volume" },
+                { label: "Support", value: "Direct engineer access" },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-sm border-2 border-slate-900/70 bg-white p-4">
+                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.1em] text-slate-500">{stat.label}</p>
+                  <p className="mt-2 text-sm font-semibold text-slate-900">{stat.value}</p>
+                </div>
+              ))}
             </div>
-            <div className="absolute -top-12 -right-12 bg-white p-8 brutal-border border-slate-900 text-slate-900 hidden md:block max-w-xs">
-              <HardHat className="h-8 w-8 mb-4" />
-              <p className="font-body text-sm font-bold">"We don't just weld metal; we forge reliability."</p>
-            </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>
   </PageWrapper>
 );
 
-const Contact = () => (
-  <PageWrapper>
-    <section className="py-24 bg-orange-600 blueprint-bg">
-      <div className="mx-auto max-w-7xl px-4">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16">
-          <div>
-            <h1 className="text-6xl font-bold tracking-tight text-white uppercase mb-8">
-              Let's <span className="text-slate-900">Build</span>.
-            </h1>
-            <p className="font-body text-base text-orange-50 mb-12">Ready to discuss your next mission-critical project? Our technical team is standing by.</p>
-            
-            <div className="space-y-8">
-              <div className="flex items-start gap-6">
-                <div className="bg-slate-900 p-4 brutal-border border-white text-white">
-                  <MapPin className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold uppercase text-white">Facility</h3>
-                  <p className="font-body text-sm text-orange-100">Unit 2C, Stone Lane Industrial Estate, Wimborne, BH21 1HB</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-6">
-                <div className="bg-slate-900 p-4 brutal-border border-white text-white">
-                  <Phone className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold uppercase text-white">Direct Line</h3>
-                  <p className="font-body text-sm text-orange-100">01202 884583</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-6">
-                <div className="bg-slate-900 p-4 brutal-border border-white text-white">
-                  <Mail className="h-6 w-6" />
-                </div>
-                <div>
-                  <h3 className="font-bold uppercase text-white">Email</h3>
-                  <p className="font-body text-sm text-orange-100">info@srsmanufacturing.co.uk</p>
-                </div>
+const Contact = () => {
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    sector: "Aerospace",
+    message: "",
+  });
+  const [errors, setErrors] = useState<{ name?: string; email?: string; message?: string }>({});
+  const [submitState, setSubmitState] = useState<SubmitState>("idle");
+
+  const updateField = (field: keyof typeof formData, value: string) => {
+    setFormData((current) => ({ ...current, [field]: value }));
+  };
+
+  const validate = () => {
+    const nextErrors: { name?: string; email?: string; message?: string } = {};
+    if (!formData.name.trim()) nextErrors.name = "Name is required.";
+    if (!formData.email.trim()) {
+      nextErrors.email = "Email is required.";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      nextErrors.email = "Enter a valid email address.";
+    }
+    if (!formData.message.trim()) nextErrors.message = "Please include project details.";
+    return nextErrors;
+  };
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextErrors = validate();
+    setErrors(nextErrors);
+
+    if (Object.keys(nextErrors).length > 0) {
+      setSubmitState("error");
+      return;
+    }
+
+    setSubmitState("loading");
+    window.setTimeout(() => {
+      setSubmitState("success");
+      setFormData({ name: "", email: "", sector: "Aerospace", message: "" });
+      setErrors({});
+    }, 1200);
+  };
+
+  return (
+    <PageWrapper>
+      <section className="bg-orange-600 py-24 blueprint-bg">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6">
+          <div className="grid grid-cols-1 gap-16 lg:grid-cols-2">
+            <div>
+              <h1 className="text-5xl font-bold uppercase tracking-tight text-white sm:text-6xl">
+                Let&apos;s <span className="text-slate-900">Build</span>
+              </h1>
+              <p className="mt-8 max-w-xl text-base leading-7 text-orange-50">
+                Ready to discuss your next mission-critical project? Our technical team is standing by.
+              </p>
+
+              <div className="mt-12 space-y-6">
+                {[
+                  {
+                    title: "Facility",
+                    value: "Unit 2C, Stone Lane Industrial Estate, Wimborne, BH21 1HB",
+                    icon: MapPin,
+                  },
+                  { title: "Direct Line", value: "01202 884583", icon: Phone },
+                  { title: "Email", value: "info@srsmanufacturing.co.uk", icon: Mail },
+                ].map((item) => (
+                  <div key={item.title} className="rounded-sm border-2 border-orange-300/75 bg-orange-500/20 p-5 shadow-[4px_4px_0_rgba(124,45,18,0.24)]">
+                    <div className="flex items-start gap-4">
+                      <div className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-slate-900 text-white">
+                        <item.icon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <p className="font-mono text-xs font-bold uppercase tracking-[0.12em] text-orange-100">{item.title}</p>
+                        <p className="mt-2 text-sm leading-6 text-white">{item.value}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-12 brutal-border border-slate-900">
-            <form className="space-y-6">
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">Name</label>
-                  <input type="text" className="w-full border-2 border-slate-900 p-3 font-body text-sm focus:bg-orange-50 outline-none" placeholder="John Doe" />
+            <div className="surface-card p-8 sm:p-10">
+              <div className="mb-8 flex items-center gap-3">
+                <Sparkles className="h-6 w-6 text-orange-600" />
+                <h2 className="text-2xl font-bold uppercase tracking-tight text-slate-900">Project Inquiry</h2>
+              </div>
+
+              {submitState === "loading" && (
+                <div className="status-panel status-panel-loading mb-6 flex items-start gap-3">
+                  <Loader2 className="mt-0.5 h-5 w-5 animate-spin text-blue-600" />
+                  <p className="text-sm text-slate-700">Sending your inquiry to our engineering team...</p>
                 </div>
-                <div className="space-y-2">
-                  <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">Email</label>
-                  <input type="email" className="w-full border-2 border-slate-900 p-3 font-body text-sm focus:bg-orange-50 outline-none" placeholder="john@company.com" />
+              )}
+
+              {submitState === "success" && (
+                <div className="status-panel status-panel-success mb-6 flex items-start gap-3">
+                  <CheckCircle2 className="mt-0.5 h-5 w-5 text-emerald-600" />
+                  <p className="text-sm text-slate-700">Thanks. Your inquiry has been received and the team will contact you shortly.</p>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">Sector</label>
-                <select className="w-full border-2 border-slate-900 p-3 font-body text-sm focus:bg-orange-50 outline-none">
-                  <option>Aerospace</option>
-                  <option>Marine</option>
-                  <option>Industrial</option>
-                  <option>Other</option>
-                </select>
-              </div>
-              <div className="space-y-2">
-                <label className="font-mono text-[10px] font-bold uppercase tracking-widest text-slate-400">Message</label>
-                <textarea rows={4} className="w-full border-2 border-slate-900 p-3 font-body text-sm focus:bg-orange-50 outline-none" placeholder="Project details..."></textarea>
-              </div>
-              <BrutalButton variant="primary" className="w-full">Send Technical Inquiry</BrutalButton>
-            </form>
+              )}
+
+              {submitState === "error" && Object.keys(errors).length > 0 && (
+                <div className="status-panel status-panel-error mb-6 flex items-start gap-3">
+                  <AlertTriangle className="mt-0.5 h-5 w-5 text-red-600" />
+                  <p className="text-sm text-slate-700">Please resolve the highlighted fields and try again.</p>
+                </div>
+              )}
+
+              <form className="space-y-6" onSubmit={onSubmit}>
+                <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Name</label>
+                    <input
+                      type="text"
+                      className={`form-control ${errors.name ? "border-red-400" : ""}`}
+                      placeholder="John Doe"
+                      value={formData.name}
+                      onChange={(event) => updateField("name", event.target.value)}
+                    />
+                    {errors.name && <p className="text-xs text-red-600">{errors.name}</p>}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Email</label>
+                    <input
+                      type="email"
+                      className={`form-control ${errors.email ? "border-red-400" : ""}`}
+                      placeholder="john@company.com"
+                      value={formData.email}
+                      onChange={(event) => updateField("email", event.target.value)}
+                    />
+                    {errors.email && <p className="text-xs text-red-600">{errors.email}</p>}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Sector</label>
+                  <select
+                    className="form-control"
+                    value={formData.sector}
+                    onChange={(event) => updateField("sector", event.target.value)}
+                  >
+                    <option>Aerospace</option>
+                    <option>Marine</option>
+                    <option>Industrial</option>
+                    <option>Other</option>
+                  </select>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="font-mono text-xs font-bold uppercase tracking-[0.1em] text-slate-500">Message</label>
+                  <textarea
+                    rows={5}
+                    className={`form-control ${errors.message ? "border-red-400" : ""}`}
+                    placeholder="Project details, materials, tolerances, and desired timeline..."
+                    value={formData.message}
+                    onChange={(event) => updateField("message", event.target.value)}
+                  />
+                  {errors.message && <p className="text-xs text-red-600">{errors.message}</p>}
+                </div>
+
+                <UIButton
+                  variant="primary"
+                  type="submit"
+                  loading={submitState === "loading"}
+                  className="w-full"
+                  trailingIcon={<ArrowRight className="h-4 w-4" />}
+                >
+                  Send Technical Inquiry
+                </UIButton>
+              </form>
+            </div>
           </div>
         </div>
-      </div>
-    </section>
-  </PageWrapper>
-);
-
-// --- Main App ---
+      </section>
+    </PageWrapper>
+  );
+};
 
 export default function App() {
   return (
@@ -479,21 +950,29 @@ export default function App() {
           </Routes>
         </AnimatePresence>
 
-        {/* Global Footer */}
-        <footer className="border-t-2 border-slate-900 bg-white py-12">
-          <div className="mx-auto max-w-7xl px-4 flex flex-col md:flex-row justify-between items-center gap-8">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center bg-slate-900 text-white">
+        <footer className="border-t border-slate-200 bg-white py-12">
+          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 md:flex-row sm:px-6">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-slate-900 text-white">
                 <Settings className="h-5 w-5" />
               </div>
-              <span className="text-lg font-bold tracking-tight text-slate-900 uppercase">SRS MANUFACTURING LTD</span>
+              <span className="text-lg font-bold uppercase tracking-tight text-slate-900">SRS Manufacturing Ltd</span>
             </div>
-            <p className="font-mono text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+
+            <p className="text-center font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
               &copy; {new Date().getFullYear()} SRS Manufacturing Ltd // Wimborne // Dorset // UK
             </p>
-            <div className="flex gap-6 font-mono text-[10px] font-bold uppercase tracking-widest">
-              <a href="#" className="hover:text-orange-600">Privacy</a>
-              <a href="#" className="hover:text-orange-600">Terms</a>
+
+            <div className="flex items-center gap-2">
+              {["Privacy", "Terms"].map((label) => (
+                <a
+                  key={label}
+                  href="#"
+                  className="rounded-sm border-2 border-slate-900/70 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600 transition-colors duration-150 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900"
+                >
+                  {label}
+                </a>
+              ))}
             </div>
           </div>
         </footer>
