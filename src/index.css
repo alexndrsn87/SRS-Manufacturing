@@ -200,6 +200,14 @@
   letter-spacing: -0.03em;
 }
 
+.hero-line {
+  display: block;
+}
+
+.hero-line-secondary {
+  margin-top: 0.22em;
+}
+
 .hero-emphasis {
   position: relative;
   color: rgb(251 146 60);
@@ -211,15 +219,38 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: -4px;
+  bottom: -0.16em;
   height: 3px;
   border-radius: 9999px;
   background: linear-gradient(90deg, rgba(251, 146, 60, 0.9), rgba(249, 115, 22, 0.3));
 }
 
+.hero-outline-frame {
+  position: relative;
+  display: inline-block;
+  padding: 0.01em 0.04em 0.12em 0;
+}
+
+.hero-outline-frame::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.02em;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(203, 213, 225, 0.85), rgba(203, 213, 225, 0.35));
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: draw-line-ltr 850ms ease-out 220ms forwards;
+}
+
 .hero-outline {
+  position: relative;
+  display: inline-block;
   color: transparent;
   -webkit-text-stroke: 1.5px rgba(255, 255, 255, 0.65);
+  text-shadow: 0 0 8px rgba(148, 163, 184, 0.12);
+  animation: outlined-reveal 650ms ease-out 120ms both;
 }
 
 .hero-visual-stage {
@@ -277,6 +308,21 @@
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-50%); }
+}
+
+@keyframes draw-line-ltr {
+  to { transform: scaleX(1); }
+}
+
+@keyframes outlined-reveal {
+  from {
+    opacity: 0.2;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @media (max-width: 1023px) {
