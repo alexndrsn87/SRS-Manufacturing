@@ -223,8 +223,14 @@ const Home = () => (
               Precision engineering partner
             </div>
             <h1 className="hero-headline text-5xl font-bold uppercase leading-[0.96] tracking-tight text-white sm:text-7xl">
-              Zero <span className="hero-emphasis">Defect</span> <br />
-              <span className="hero-outline">Results.</span>
+              <span className="hero-line hero-line-primary">
+                Zero <span className="hero-emphasis">Defect</span>
+              </span>
+              <span className="hero-line hero-line-secondary">
+                <span className="hero-outline-frame">
+                  <span className="hero-outline">Results.</span>
+                </span>
+              </span>
             </h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-slate-300">
               High-fidelity welding and precision engineering for the world&apos;s most demanding industries. Trusted by aerospace,
