@@ -301,8 +301,14 @@
 
 .marquee-track {
   display: flex;
-  animation: marquee 46s linear infinite;
+  animation: marquee 80s linear infinite;
   width: max-content;
+  will-change: transform;
+}
+
+.ticker-shell:hover .marquee-track,
+.ticker-shell:focus-within .marquee-track {
+  animation-play-state: paused;
 }
 
 @keyframes marquee {
