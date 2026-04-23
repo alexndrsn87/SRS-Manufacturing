@@ -301,7 +301,7 @@
 
 .marquee-track {
   display: flex;
-  animation: marquee 34s linear infinite;
+  animation: marquee 46s linear infinite;
   width: max-content;
 }
 
