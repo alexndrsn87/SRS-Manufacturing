@@ -272,17 +272,14 @@ const Home = () => (
     <section className="border-y border-slate-200 bg-white py-4">
       <div className="ticker-shell">
         <div className="marquee-track">
-          {[...Array(10)].map((_, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-8 whitespace-nowrap px-8 font-mono text-sm font-semibold uppercase tracking-[0.12em] text-slate-700"
-            >
-              <span>Aerospace Certified</span>
-              <Zap className="h-4 w-4 text-orange-500" />
-              <span>Marine Engineering</span>
-              <Zap className="h-4 w-4 text-orange-500" />
-              <span>Precision Welding</span>
-              <Zap className="h-4 w-4 text-orange-500" />
+          {[...Array(20)].map((_, i) => (
+            <div key={i} className="flex items-center whitespace-nowrap font-mono text-sm font-semibold uppercase tracking-[0.12em] text-slate-700">
+              {["Aerospace Certified", "Marine Engineering", "Precision Welding"].map((label) => (
+                <span key={`${i}-${label}`} className="inline-flex items-center gap-6 px-6">
+                  <span>{label}</span>
+                  <Zap className="h-4 w-4 text-orange-500" />
+                </span>
+              ))}
             </div>
           ))}
         </div>
