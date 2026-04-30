@@ -34,11 +34,16 @@ import {
   Sparkles,
   Menu,
   X,
+  LockKeyhole,
 } from "lucide-react";
 
 type ButtonVariant = "primary" | "secondary" | "accent";
 
 type SubmitState = "idle" | "loading" | "success" | "error";
+
+const ACCESS_STORAGE_KEY = "srs_site_access_granted_v1";
+const SITE_ACCESS_PASSWORD = (import.meta.env.VITE_SITE_ACCESS_PASSWORD ?? "preview-access").trim();
+const ACCESS_GATE_ENABLED = SITE_ACCESS_PASSWORD.length > 0;
 
 const PageWrapper = ({ children }: { children: React.ReactNode }) => (
   <motion.main
@@ -88,6 +93,91 @@ const UIButton = ({
       <span>{children}</span>
       {!loading && trailingIcon}
     </button>
+  );
+};
+
+const AccessGate = ({ children }: { children: React.ReactNode }) => {
+  const [isUnlocked, setIsUnlocked] = useState<boolean>(() => !ACCESS_GATE_ENABLED);
+  const [showUnlock, setShowUnlock] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!ACCESS_GATE_ENABLED) return;
+    const access = window.localStorage.getItem(ACCESS_STORAGE_KEY);
+    if (access === "granted") setIsUnlocked(true);
+  }, []);
+
+  const onUnlock = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (password.trim() === SITE_ACCESS_PASSWORD) {
+      window.localStorage.setItem(ACCESS_STORAGE_KEY, "granted");
+      setIsUnlocked(true);
+      setError("");
+      setPassword("");
+      return;
+    }
+    setError("Access code not recognized.");
+  };
+
+  if (isUnlocked) return <>{children}</>;
+
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 py-16 text-white blueprint-bg dark-blueprint">
+      <div className="w-full max-w-2xl border-2 border-slate-600 bg-slate-900/80 p-8 shadow-[6px_6px_0_rgba(15,23,42,0.45)] sm:p-10">
+        <p className="font-mono text-xs font-bold uppercase tracking-[0.14em] text-slate-300">Service Notice</p>
+        <h1 className="mt-4 text-4xl font-bold uppercase tracking-tight sm:text-5xl">Whoops. This page is not available right now.</h1>
+        <p className="mt-5 max-w-xl text-sm leading-6 text-slate-300">
+          This preview window has expired. If you still need temporary access, use the internal recovery code.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => {
+            setShowUnlock((current) => !current);
+            setError("");
+          }}
+          className="mt-8 inline-flex items-center gap-2 border-2 border-slate-500 px-4 py-2 font-mono text-xs font-bold uppercase tracking-[0.1em] text-slate-200 transition-colors duration-150 hover:border-orange-300 hover:text-orange-200"
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Error 410-Expired
+        </button>
+
+        <AnimatePresence>
+          {showUnlock && (
+            <motion.form
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
+              onSubmit={onUnlock}
+              className="mt-6 space-y-4 border-2 border-slate-500 bg-slate-900 p-5"
+            >
+              <div className="flex items-center gap-2 text-orange-200">
+                <LockKeyhole className="h-4 w-4" />
+                <p className="font-mono text-xs font-bold uppercase tracking-[0.1em]">Restricted Access</p>
+              </div>
+
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                placeholder="Enter access code"
+                className="form-control bg-white"
+                autoComplete="off"
+              />
+
+              {error && <p className="text-xs text-red-300">{error}</p>}
+
+              <div className="flex flex-wrap gap-3">
+                <UIButton type="submit" variant="accent">Unlock Preview</UIButton>
+                <UIButton type="button" variant="secondary" onClick={() => setShowUnlock(false)}>Cancel</UIButton>
+              </div>
+            </motion.form>
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   );
 };
 
@@ -940,46 +1030,48 @@ const Contact = () => {
 
 export default function App() {
   return (
-    <Router>
-      <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-orange-600 selection:text-white">
-        <Navigation />
-        <AnimatePresence mode="wait">
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/capabilities" element={<Capabilities />} />
-            <Route path="/sectors" element={<Sectors />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-          </Routes>
-        </AnimatePresence>
+    <AccessGate>
+      <Router>
+        <div className="min-h-screen bg-white font-sans text-slate-900 selection:bg-orange-600 selection:text-white">
+          <Navigation />
+          <AnimatePresence mode="wait">
+            <Routes>
+              <Route path="/" element={<Home />} />
+              <Route path="/capabilities" element={<Capabilities />} />
+              <Route path="/sectors" element={<Sectors />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+            </Routes>
+          </AnimatePresence>
 
-        <footer className="border-t border-slate-200 bg-white py-12">
-          <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 md:flex-row sm:px-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-slate-900 text-white">
-                <Settings className="h-5 w-5" />
+          <footer className="border-t border-slate-200 bg-white py-12">
+            <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-8 px-4 md:flex-row sm:px-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-sm bg-slate-900 text-white">
+                  <Settings className="h-5 w-5" />
+                </div>
+                <span className="text-lg font-bold uppercase tracking-tight text-slate-900">SRS Manufacturing Ltd</span>
               </div>
-              <span className="text-lg font-bold uppercase tracking-tight text-slate-900">SRS Manufacturing Ltd</span>
-            </div>
 
-            <p className="text-center font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
-              &copy; {new Date().getFullYear()} SRS Manufacturing Ltd // Wimborne // Dorset // UK
-            </p>
+              <p className="text-center font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-500">
+                &copy; {new Date().getFullYear()} SRS Manufacturing Ltd // Wimborne // Dorset // UK
+              </p>
 
-            <div className="flex items-center gap-2">
-              {["Privacy", "Terms"].map((label) => (
-                <a
-                  key={label}
-                  href="#"
-                  className="rounded-sm border-2 border-slate-900/70 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600 transition-colors duration-150 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900"
-                >
-                  {label}
-                </a>
-              ))}
+              <div className="flex items-center gap-2">
+                {["Privacy", "Terms"].map((label) => (
+                  <a
+                    key={label}
+                    href="#"
+                    className="rounded-sm border-2 border-slate-900/70 px-4 py-2 font-mono text-[11px] font-semibold uppercase tracking-[0.1em] text-slate-600 transition-colors duration-150 hover:border-slate-900 hover:bg-slate-50 hover:text-slate-900"
+                  >
+                    {label}
+                  </a>
+                ))}
+              </div>
             </div>
-          </div>
-        </footer>
-      </div>
-    </Router>
+          </footer>
+        </div>
+      </Router>
+    </AccessGate>
   );
 }
